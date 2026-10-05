@@ -176,7 +176,7 @@ footer .spacer{flex:1}
 @media(max-width:940px){.row{grid-template-columns:1fr}.c4,.c5,.c7,.c8,.c12{grid-column:auto}}
 @media(max-width:820px){.navlinks{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;margin:0;padding:8px 6px;justify-content:space-around;background:rgba(255,254,251,.97);backdrop-filter:blur(12px);border-top:1px solid var(--line)}.navlinks a{padding:6px 8px;font-size:12.5px}body{padding-bottom:70px}.total{font-size:clamp(34px,10vw,44px)}}
 @media(max-width:520px){.stats{grid-template-columns:1fr 1fr;gap:14px}.networth{display:none}}</style>
-<header id="particle12" class="topbar"><div id="particle1" ><a id="particle1" href="#/" class="brand"><span id="particle2" class="brand-mark">B</span>
+<header id="particle12" class="topbar"><div id="particle1" class="topbar-inner wrap" class="topbar-inner wrap"><a id="particle1" href="#/" class="brand"><span id="particle2" class="brand-mark">B</span>
 <span id="particle3" >Bank of Breck</span></a>
 <nav id="particle2" class="navlinks"><a id="particle1" href="#/" data-nav="dashboard" >Dashboard</a>
 <a id="particle2" href="#accounts" data-nav="accounts" >Accounts</a>
@@ -186,48 +186,48 @@ footer .spacer{flex:1}
 <a id="particle6" href="#activity" data-nav="activity" >Activity</a></nav>
 <div id="particle3" class="networth"><span id="particle1" class="k">NET WORTH</span>
 <strong id="net-worth" class="v">$0.00</strong></div></div></header>
-<main id="particle14" class="wrap"><div id="particle1" class="row"><section id="sec-overview" ><p id="greeting" class="greeting">Good morning.</p>
+<main id="particle14" class="wrap"><div id="particle1" class="row"><section class="card pad c5" id="sec-overview" class="card pad c5"><p id="greeting" class="greeting">Good morning.</p>
 <h1 id="particle3" class="hero-title">Your money, in one place.</h1>
 <p id="particle4" class="sub">Every account, card and loan — stored only in this browser.</p>
 <div id="total-balance" class="total">$0.00</div>
 <div id="particle6" class="stats"><div id="particle1" class="stat"><span id="particle1" class="k">AVAILABLE</span>
 <div id="stat-available" class="v">$0.00</div></div>
 <div id="particle2" class="stat"><span id="particle1" class="k">OWED</span>
-<div id="stat-owed" >$0.00</div></div>
+<div class="v owed" id="stat-owed" class="v owed">$0.00</div></div>
 <div id="particle3" class="stat"><span id="particle1" class="k">ACCOUNTS</span>
 <div id="stat-accounts" class="v">0</div></div></div>
 <div id="particle7" class="interest"><span id="interest-pending" class="v">$0.00</span>
 <span id="particle2" class="muted">ready to collect</span>
-<button id="particle3" data-action="interest" >Collect</button></div>
+<button id="particle3" class="btn primary small" data-action="interest" class="btn primary small">Collect</button></div>
 <div id="particle8" class="quick"><a id="particle1" href="#new-account" class="btn">New account</a>
 <a id="particle2" href="#transfer" class="btn">Transfer</a>
 <a id="particle3" href="#send" class="btn">Send money</a>
 <a id="particle4" href="#deposit" class="btn">Add money</a>
 <a id="particle5" href="#apply-loan" class="btn">Apply for loan</a>
 <a id="particle6" href="#new-card" class="btn">New card</a></div></section>
-<section id="sec-accounts" ><div id="particle2" class="section-head"><h2 id="particle1" >Accounts</h2>
+<section class="card pad c7" id="sec-accounts" class="card pad c7"><div id="particle2" class="section-head"><h2 id="particle1" >Accounts</h2>
 <span id="accounts-count" class="count">0 accounts</span>
 <div id="particle3" class="spacer"></div>
-<a id="particle4" href="#new-account" >New account</a></div>
+<a id="particle4" class="btn small" href="#new-account" class="btn small">New account</a></div>
 <div id="accounts-grid" class="accounts-grid"></div></section>
-<section id="sec-cards" ><div id="particle2" class="section-head"><h2 id="particle1" >Virtual cards</h2>
+<section class="card pad c7" id="sec-cards" class="card pad c7"><div id="particle2" class="section-head"><h2 id="particle1" >Virtual cards</h2>
 <span id="cards-count" class="count">0 active</span>
 <div id="particle3" class="spacer"></div>
-<a id="particle4" href="#new-card" >New card</a></div>
+<a id="particle4" class="btn small" href="#new-card" class="btn small">New card</a></div>
 <div id="cards-grid" class="vcards"></div></section>
-<section id="sec-loans" ><div id="particle2" class="section-head"><h2 id="particle1" >Loans</h2>
+<section class="card pad c5" id="sec-loans" class="card pad c5"><div id="particle2" class="section-head"><h2 id="particle1" >Loans</h2>
 <div id="particle2" class="spacer"></div>
-<a id="particle3" href="#apply-loan" >Apply</a></div>
+<a id="particle3" class="btn small" href="#apply-loan" class="btn small">Apply</a></div>
 <div id="loans-list" class="loans-list"></div></section>
-<section id="sec-friends" ><div id="particle2" class="section-head"><h2 id="particle1" >Friends</h2></div>
+<section class="card pad c4" id="sec-friends" class="card pad c4"><div id="particle2" class="section-head"><h2 id="particle1" >Friends</h2></div>
 <div id="friends-list" ></div></section>
-<section id="sec-activity" ><div id="particle2" class="section-head"><h2 id="particle1" >Activity</h2>
+<section class="card pad c8" id="sec-activity" class="card pad c8"><div id="particle2" class="section-head"><h2 id="particle1" >Activity</h2>
 <div id="particle2" class="spacer"></div>
-<button id="particle3" data-action="clear-activity" >Clear</button></div>
+<button id="particle3" class="btn ghost small" data-action="clear-activity" class="btn ghost small">Clear</button></div>
 <div id="activity-list" class="activity"></div></section></div></main>
 <footer id="particle16" class="wrap"><span id="particle1" >Bank of Breck — a front-end-only demo. No real money, no server.</span>
 <div id="particle2" class="spacer"></div>
-<button id="particle3" data-action="reset" >Reset demo data</button></footer>
+<button id="particle3" class="btn ghost small" data-action="reset" class="btn ghost small">Reset demo data</button></footer>
 <div id="modal-new-account" data-modal="new-account" class="modal"><div id="particle3" class="modal-card"><div id="particle1" class="modal-head"><h3 id="particle1" >Open an account</h3>
 <button id="particle2" data-action="close" aria-label="Close" class="icon-btn">×</button></div>
 <form id="particle2" data-form="new-account" ><div id="particle1" class="modal-body"><div id="particle1" class="field"><label id="particle1" for="account-name" >Account name</label>
@@ -237,8 +237,8 @@ footer .spacer{flex:1}
 <option id="particle2" value="savings" >Savings</option></select></div>
 <div id="particle3" class="field"><label id="particle1" for="account-opening" >Opening deposit</label>
 <input id="account-opening" type="number" min="0" step="0.01" value="0" placeholder="0.00"  /></div></div>
-<div id="particle2" class="modal-actions"><button id="particle1" type="button" data-action="close" >Cancel</button>
-<button id="particle2" type="submit" >Open account</button></div></form></div></div>
+<div id="particle2" class="modal-actions"><button id="particle1" class="btn ghost" type="button" data-action="close" class="btn ghost">Cancel</button>
+<button id="particle2" class="btn primary" type="submit" class="btn primary">Open account</button></div></form></div></div>
 <div id="modal-transfer" data-modal="transfer" class="modal"><div id="particle3" class="modal-card"><div id="particle1" class="modal-head"><h3 id="particle1" >Transfer money</h3>
 <button id="particle2" data-action="close" aria-label="Close" class="icon-btn">×</button></div>
 <form id="particle2" data-form="transfer" ><div id="particle1" class="modal-body"><div id="particle1" class="field"><label id="particle1" for="transfer-from" >From</label>
@@ -249,8 +249,8 @@ footer .spacer{flex:1}
 <input id="transfer-amount" type="number" min="0.01" step="0.01" placeholder="0.00"  /></div>
 <div id="particle4" class="field"><label id="particle1" for="transfer-note" >Note</label>
 <input id="transfer-note" type="text" placeholder="What is it for?"  /></div></div>
-<div id="particle2" class="modal-actions"><button id="particle1" type="button" data-action="close" >Cancel</button>
-<button id="particle2" type="submit" >Transfer</button></div></form></div></div>
+<div id="particle2" class="modal-actions"><button id="particle1" class="btn ghost" type="button" data-action="close" class="btn ghost">Cancel</button>
+<button id="particle2" class="btn primary" type="submit" class="btn primary">Transfer</button></div></form></div></div>
 <div id="modal-send" data-modal="send" class="modal"><div id="particle3" class="modal-card"><div id="particle1" class="modal-head"><h3 id="particle1" >Send money</h3>
 <button id="particle2" data-action="close" aria-label="Close" class="icon-btn">×</button></div>
 <form id="particle2" data-form="send" ><div id="particle1" class="modal-body"><div id="particle1" class="field"><label id="particle1" for="send-friend" >Friend</label>
@@ -261,8 +261,8 @@ footer .spacer{flex:1}
 <input id="send-amount" type="number" min="0.01" step="0.01" placeholder="0.00"  /></div>
 <div id="particle4" class="field"><label id="particle1" for="send-note" >Note</label>
 <input id="send-note" type="text" placeholder="Thanks for dinner"  /></div></div>
-<div id="particle2" class="modal-actions"><button id="particle1" type="button" data-action="close" >Cancel</button>
-<button id="particle2" type="submit" >Send</button></div></form></div></div>
+<div id="particle2" class="modal-actions"><button id="particle1" class="btn ghost" type="button" data-action="close" class="btn ghost">Cancel</button>
+<button id="particle2" class="btn primary" type="submit" class="btn primary">Send</button></div></form></div></div>
 <div id="modal-deposit" data-modal="deposit" class="modal"><div id="particle3" class="modal-card"><div id="particle1" class="modal-head"><h3 id="particle1" >Add money</h3>
 <button id="particle2" data-action="close" aria-label="Close" class="icon-btn">×</button></div>
 <form id="particle2" data-form="deposit" ><div id="particle1" class="modal-body"><div id="particle1" class="field"><label id="particle1" for="deposit-account" >Into</label>
@@ -270,8 +270,8 @@ footer .spacer{flex:1}
 <div id="particle2" class="field"><label id="particle1" for="deposit-amount" >Amount</label>
 <input id="deposit-amount" type="number" min="0.01" step="0.01" placeholder="0.00"  /></div>
 <p id="particle3" class="muted">Demo funds. Nothing real moves.</p></div>
-<div id="particle2" class="modal-actions"><button id="particle1" type="button" data-action="close" >Cancel</button>
-<button id="particle2" type="submit" >Add money</button></div></form></div></div>
+<div id="particle2" class="modal-actions"><button id="particle1" class="btn ghost" type="button" data-action="close" class="btn ghost">Cancel</button>
+<button id="particle2" class="btn primary" type="submit" class="btn primary">Add money</button></div></form></div></div>
 <div id="modal-apply-loan" data-modal="apply-loan" class="modal"><div id="particle3" class="modal-card"><div id="particle1" class="modal-head"><h3 id="particle1" >Apply for a loan</h3>
 <button id="particle2" data-action="close" aria-label="Close" class="icon-btn">×</button></div>
 <form id="particle2" data-form="apply-loan" ><div id="particle1" class="modal-body"><div id="particle1" class="field"><label id="particle1" for="loan-amount" >Amount</label>
@@ -285,8 +285,8 @@ footer .spacer{flex:1}
 <div id="particle3" class="field"><label id="particle1" for="loan-purpose" >Purpose</label>
 <input id="loan-purpose" type="text" placeholder="New laptop"  /></div>
 <div id="loan-preview" class="preview"><p id="particle2" class="scrollParagraph">Enter an amount to see your rate.</p></div></div>
-<div id="particle2" class="modal-actions"><button id="particle1" type="button" data-action="close" >Cancel</button>
-<button id="particle2" type="submit" >Apply</button></div></form></div></div>
+<div id="particle2" class="modal-actions"><button id="particle1" class="btn ghost" type="button" data-action="close" class="btn ghost">Cancel</button>
+<button id="particle2" class="btn primary" type="submit" class="btn primary">Apply</button></div></form></div></div>
 <div id="modal-new-card" data-modal="new-card" class="modal"><div id="particle3" class="modal-card"><div id="particle1" class="modal-head"><h3 id="particle1" >New virtual card</h3>
 <button id="particle2" data-action="close" aria-label="Close" class="icon-btn">×</button></div>
 <form id="particle2" data-form="new-card" ><div id="particle1" class="modal-body"><div id="particle1" class="field"><label id="particle1" for="card-nickname" >Nickname</label>
@@ -301,8 +301,8 @@ footer .spacer{flex:1}
 <option id="particle5" value="4" >Ocean</option>
 <option id="particle6" value="5" >Ruby</option>
 <option id="particle7" value="6" >Lagoon</option></select></div></div>
-<div id="particle2" class="modal-actions"><button id="particle1" type="button" data-action="close" >Cancel</button>
-<button id="particle2" type="submit" >Create card</button></div></form></div></div>
+<div id="particle2" class="modal-actions"><button id="particle1" class="btn ghost" type="button" data-action="close" class="btn ghost">Cancel</button>
+<button id="particle2" class="btn primary" type="submit" class="btn primary">Create card</button></div></form></div></div>
 <div id="modal-detail" data-modal="detail" class="modal"><div id="particle3" class="modal-card"><div id="particle1" class="modal-head"><h3 id="detail-title" >Details</h3>
 <button id="particle2" data-action="close" aria-label="Close" class="icon-btn">×</button></div>
 <div id="detail-body" class="modal-body"></div></div></div>

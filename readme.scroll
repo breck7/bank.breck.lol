@@ -170,7 +170,7 @@ css
 header
  addClass topbar
  div
-  addClass topbar-inner wrap
+  class topbar-inner wrap
   a
    addClass brand
    href #/
@@ -210,7 +210,7 @@ main
  div
   addClass row
   section
-   addClass card pad c5
+   class card pad c5
    id sec-overview
    p Good morning.
     addClass greeting
@@ -236,7 +236,7 @@ main
      span OWED
       addClass k
      div $0.00
-      addClass v owed
+      class v owed
       id stat-owed
     div
      addClass stat
@@ -253,7 +253,7 @@ main
     span ready to collect
      addClass muted
     button Collect
-     addClass btn primary small
+     class btn primary small
      data-action interest
    div
     addClass quick
@@ -276,7 +276,7 @@ main
      addClass btn
      href #new-card
   section
-   addClass card pad c7
+   class card pad c7
    id sec-accounts
    div
     addClass section-head
@@ -287,13 +287,13 @@ main
     div
      addClass spacer
     a New account
-     addClass btn small
+     class btn small
      href #new-account
    div
     addClass accounts-grid
     id accounts-grid
   section
-   addClass card pad c7
+   class card pad c7
    id sec-cards
    div
     addClass section-head
@@ -304,13 +304,13 @@ main
     div
      addClass spacer
     a New card
-     addClass btn small
+     class btn small
      href #new-card
    div
     addClass vcards
     id cards-grid
   section
-   addClass card pad c5
+   class card pad c5
    id sec-loans
    div
     addClass section-head
@@ -318,13 +318,13 @@ main
     div
      addClass spacer
     a Apply
-     addClass btn small
+     class btn small
      href #apply-loan
    div
     addClass loans-list
     id loans-list
   section
-   addClass card pad c4
+   class card pad c4
    id sec-friends
    div
     addClass section-head
@@ -332,7 +332,7 @@ main
    div
     id friends-list
   section
-   addClass card pad c8
+   class card pad c8
    id sec-activity
    div
     addClass section-head
@@ -340,7 +340,7 @@ main
     div
      addClass spacer
     button Clear
-     addClass btn ghost small
+     class btn ghost small
      data-action clear-activity
    div
     addClass activity
@@ -352,7 +352,7 @@ footer
  div
   addClass spacer
  button Reset demo data
-  addClass btn ghost small
+  class btn ghost small
   data-action reset
 
 div
@@ -404,11 +404,11 @@ div
    div
     addClass modal-actions
     button Cancel
-     addClass btn ghost
+     class btn ghost
      type button
      data-action close
     button Open account
-     addClass btn primary
+     class btn primary
      type submit
 
 div
@@ -461,11 +461,11 @@ div
    div
     addClass modal-actions
     button Cancel
-     addClass btn ghost
+     class btn ghost
      type button
      data-action close
     button Transfer
-     addClass btn primary
+     class btn primary
      type submit
 
 div
@@ -518,11 +518,11 @@ div
    div
     addClass modal-actions
     button Cancel
-     addClass btn ghost
+     class btn ghost
      type button
      data-action close
     button Send
-     addClass btn primary
+     class btn primary
      type submit
 
 div
@@ -563,11 +563,11 @@ div
    div
     addClass modal-actions
     button Cancel
-     addClass btn ghost
+     class btn ghost
      type button
      data-action close
     button Add money
-     addClass btn primary
+     class btn primary
      type submit
 
 div
@@ -628,11 +628,11 @@ div
    div
     addClass modal-actions
     button Cancel
-     addClass btn ghost
+     class btn ghost
      type button
      data-action close
     button Apply
-     addClass btn primary
+     class btn primary
      type submit
 
 div
@@ -693,11 +693,11 @@ div
    div
     addClass modal-actions
     button Cancel
-     addClass btn ghost
+     class btn ghost
      type button
      data-action close
     button Create card
-     addClass btn primary
+     class btn primary
      type submit
 
 div
