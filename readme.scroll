@@ -804,7 +804,7 @@ script
    if (from.balance < amount) return "Not enough money in " + from.name;
    from.balance = round2(from.balance - amount);
    to.balance = round2(to.balance + amount);
-   addTx({ kind: "transfer", amount, from: from.id, to: to.id, note: note || "Transfer" });
+   addTx({ kind: "transfer", amount, from: from.id, to: to.id, note: note || to.name });
    return null;
   }
   function doSend(fromId, friendId, amount, note) {
@@ -910,7 +910,7 @@ script
   }
   function txMeta(t) {
    if (t.kind === "send") return { icon: "↗", desc: "Sent to " + friendName(t.to) + (t.note ? " · " + t.note : ""), sign: -1 };
-   if (t.kind === "transfer") return { icon: "⇄", desc: "Transfer · " + (t.note || accountName(t.to)), sign: 0 };
+   if (t.kind === "transfer") return { icon: "⇄", desc: "Transfer" + (t.note ? " · " + t.note : ""), sign: 0 };
    if (t.kind === "interest") return { icon: "%", desc: "Interest · " + accountName(t.to), sign: 1 };
    if (t.kind === "loan") return { icon: "+", desc: "Loan disbursed · " + (t.note || "Loan"), sign: 1 };
    if (t.kind === "payment") return { icon: "✓", desc: t.note || "Loan payment", sign: -1 };
