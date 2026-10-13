@@ -5,7 +5,7 @@ description Bank of Breck is a front-end-only bank. Open unlimited checking and 
 canonicalUrl https://bank.breck.lol/
 openGraphImage https://bank.breck.lol/og.png
 favicon favicon.svg
-keywords bank, virtual bank, checking, savings, loans, virtual cards, localStorage, front-end
+keywords bank, virtual bank, checking, savings, loans, virtual cards, ScrollSet, front-end
 metaTags
 
 css
@@ -356,6 +356,9 @@ footer
  span Bank of Breck — a front-end-only demo. No real money, no server.
  div
   addClass spacer
+ a History file
+  class btn ghost small
+  href #history
  button Reset demo data
   class btn ghost small
   data-action reset
@@ -767,50 +770,230 @@ script
   "use strict";
   // ============================================================
   // Bank of Breck — a front-end-only bank.
-  // All state lives in localStorage. There is no server.
-  // To add a backend later, keep these shapes and replace the
-  // Backend adapter below with fetch() calls to your own API.
+  // All state is derived by replaying a ScrollSet history file of
+  // transactions. The file lives in the URL query string (Patch format); the view lives in the hash.
+  // To add a backend later, sync the history file instead of the state.
   // ============================================================
-  const STORAGE_KEY = "bankOfBreck.v1";
   const DAY = 86400000;
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const round2 = n => Math.round((Number(n) || 0) * 100) / 100;
-  const digits = n => Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join("");
-  const uid = p => (p || "id") + "_" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
   const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
   const money = n => usd.format(Number(n) || 0);
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const initials = name => String(name || "?").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const label = t => (t === "savings" ? "Savings" : "Checking");
   const maskCard = num => "•••• •••• •••• " + String(num).slice(-4);
-  // ===== Backend adapter: swap this for fetch() to go serverful =====
-  const Backend = {
-   load() { try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } },
-   save(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {} }
-  };
-  // ===== Seed data =====
-  function seed() {
-   const now = Date.now();
-   const checking = { id: uid("acct"), name: "Everyday Checking", type: "checking", number: digits(4), balance: 752837.17, rate: 0.001, createdAt: now - 42 * DAY, lastAccrued: now };
-   const savings = { id: uid("acct"), name: "High-Yield Savings", type: "savings", number: digits(4), balance: 1000000, rate: 0.0425, createdAt: now - 140 * DAY, lastAccrued: now - 6 * DAY };
-   const friends = [
-    { id: uid("fr"), name: "Alex Rivera", handle: "@alex", color: "#3d6fd6" },
-    { id: uid("fr"), name: "Sam Chen", handle: "@sam", color: "#0d9f6e" },
-    { id: uid("fr"), name: "Jordan Lee", handle: "@jordan", color: "#c2703d" },
-    { id: uid("fr"), name: "Priya Patel", handle: "@priya", color: "#7c5cd6" }
-   ];
-   const cards = [
-    { id: uid("card"), nickname: "Subscriptions", number: "4147000000008008", expiry: expDate(), cvv: digits(3), limit: 5000000, status: "active", createdAt: now - 30 * DAY, gradient: "linear-gradient(135deg,#0f766e,#0d9f6e)", spent: 0 }
-   ];
-   const transactions = [
-    { id: uid("tx"), ts: now - 42 * DAY, kind: "deposit", amount: 752837.17, to: checking.id, note: "Opening deposit" },
-    { id: uid("tx"), ts: now - 20 * DAY, kind: "deposit", amount: 1000000, to: savings.id, note: "Opening deposit" },
-    { id: uid("tx"), ts: now - 3 * DAY, kind: "send", amount: 42.5, from: checking.id, to: friends[0].id, note: "Dinner" }
-   ];
-   return { version: 1, holder: "", accounts: [checking, savings], friends, loans: [], cards, transactions, settings: {} };
+  // @@REDUCER-START
+  // ===== The history file: a ScrollSet of transactions =====
+  // One concept per transaction, concepts separated by blank lines,
+  // each line is "key value". All app state is derived by replaying it.
+  const GRADIENTS = ["linear-gradient(135deg,#0f766e,#0d9f6e)", "linear-gradient(135deg,#1e293b,#0f172a)", "linear-gradient(135deg,#b45309,#f59e0b)", "linear-gradient(135deg,#6d28d9,#8b5cf6)", "linear-gradient(135deg,#1d4ed8,#3b82f6)", "linear-gradient(135deg,#9f1239,#ef4444)", "linear-gradient(135deg,#0e7490,#06b6d4)"];
+  function parseLog(text) {
+   return String(text || "").split(/\n[ \t]*\n/).map(block => {
+    const o = {};
+    block.split("\n").forEach(line => {
+     line = line.replace(/\s+$/, "");
+     if (!line) return;
+     const i = line.indexOf(" ");
+     o[i < 0 ? line : line.slice(0, i)] = i < 0 ? "" : line.slice(i + 1);
+    });
+    return o;
+   }).filter(o => o.type);
   }
-  let state = Backend.load() || seed();
+  const serializeTx = t => ["type", "time"].concat(Object.keys(t).filter(k => k !== "type" && k !== "time")).filter(k => t[k] !== undefined && t[k] !== null && t[k] !== "").map(k => k + " " + String(t[k]).replace(/[\r\n]+/g, " ")).join("\n");
+  const logToText = txs => txs.map(serializeTx).join("\n\n") + "\n";
+  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; }
+  function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function loanApr(amount, term) {
+   const base = 0.059;
+   const size = Math.min(0.06, (Number(amount) || 0) / 50000 * 0.02);
+   const termAdj = term >= 48 ? 0.012 : term <= 12 ? -0.004 : 0;
+   return Math.max(0.039, base + size + termAdj);
+  }
+  function accruedInterest(a, now) {
+   if (a.type !== "savings") return 0;
+   const since = a.lastAccrued || a.createdAt || now;
+   const days = Math.max(0, (now - since) / DAY);
+   return round2(a.balance * (a.rate || 0) * days / 365);
+  }
+  function expiryFrom(ts) { const d = new Date(ts); d.setFullYear(d.getFullYear() + 3); return String(d.getMonth() + 1).padStart(2, "0") + "/" + String(d.getFullYear()).slice(-2); }
+  // Pure reducer: log in, state out. IDs are sequential (a1, c1, l1, f1),
+  // randomness is seeded from each transaction, so replay is identical everywhere.
+  // Invalid transactions (e.g. overdrafts) are skipped.
+  function replay(txs) {
+   const s = { version: 2, holder: "", accounts: [], friends: [], loans: [], cards: [], transactions: [], settings: {} };
+   const n = { a: 0, f: 0, c: 0, l: 0 };
+   const find = (list, id) => list.find(x => x.id === id);
+   txs.forEach((t, i) => {
+    const r = rng(hashStr(i + "|" + t.time + "|" + t.type));
+    const dg = k => Array.from({ length: k }, () => Math.floor(r() * 10)).join("");
+    const ts = Number(t.time) || 0, amt = round2(t.amount);
+    const log = o => s.transactions.unshift(Object.assign({ id: "t" + (i + 1), ts }, o));
+    const a = find(s.accounts, t.account), from = find(s.accounts, t.from);
+    if (t.type === "name") s.holder = t.name || "";
+    else if (t.type === "friend") s.friends.push({ id: "f" + (++n.f), name: t.name || "Friend", handle: t.handle || "", color: t.color || "#3d6fd6" });
+    else if (t.type === "openAccount") { const kind = t.kind === "savings" ? "savings" : "checking"; s.accounts.push({ id: "a" + (++n.a), name: t.name || (kind === "savings" ? "Savings" : "Checking"), type: kind, number: t.number || dg(4), balance: 0, rate: kind === "savings" ? 0.0425 : 0.001, createdAt: ts, lastAccrued: Number(t.accruedFrom) || ts }); }
+    else if (t.type === "closeAccount") { if (a && a.balance <= 0.01) s.accounts.splice(s.accounts.indexOf(a), 1); }
+    else if (t.type === "deposit") { if (a && amt > 0) { a.balance = round2(a.balance + amt); log({ kind: "deposit", amount: amt, to: a.id, note: t.note || ("Deposit · " + a.name) }); } }
+    else if (t.type === "transfer") { const to = find(s.accounts, t.to); if (from && to && from !== to && amt > 0 && from.balance >= amt) { from.balance = round2(from.balance - amt); to.balance = round2(to.balance + amt); log({ kind: "transfer", amount: amt, from: from.id, to: to.id, note: t.note || to.name }); } }
+    else if (t.type === "send") { const f = find(s.friends, t.to); if (from && f && amt > 0 && from.balance >= amt) { from.balance = round2(from.balance - amt); log({ kind: "send", amount: amt, from: from.id, to: f.id, note: t.note || "" }); } }
+    else if (t.type === "interest") { let total = 0; s.accounts.forEach(x => { if (x.type !== "savings") return; const g = accruedInterest(x, ts); if (g > 0) { x.balance = round2(x.balance + g); total += g; log({ kind: "interest", amount: g, to: x.id, note: "Interest · " + x.name }); } x.lastAccrued = ts; }); }
+    else if (t.type === "card") { const nick = t.nickname || "Virtual card"; const c = { id: "c" + (++n.c), nickname: nick, number: t.number || dg(16), expiry: expiryFrom(ts), cvv: dg(3), limit: round2(t.limit) || 500, status: "active", createdAt: ts, gradient: GRADIENTS[(parseInt(t.color) || 0) % GRADIENTS.length], spent: 0 }; s.cards.push(c); if (!t.quiet) log({ kind: "card", amount: 0, to: c.id, note: 'Created card "' + nick + '"' }); }
+    else if (t.type === "cancelCard") { const c = find(s.cards, t.card); if (c && c.status === "active") { c.status = "canceled"; log({ kind: "card", amount: 0, to: c.id, note: 'Canceled card "' + c.nickname + '"' }); } }
+    else if (t.type === "loan") { if (amt > 0) { const term = parseInt(t.term) || 24, apr = loanApr(amt, term), purpose = t.purpose || "Personal loan"; const dest = s.accounts.find(x => x.type === "checking") || s.accounts[0]; const l = { id: "l" + (++n.l), name: purpose, principal: amt, apr, termMonths: term, balance: amt, status: "active", createdAt: ts, payments: [] }; s.loans.push(l); if (dest) dest.balance = round2(dest.balance + amt); log({ kind: "loan", amount: amt, to: dest ? dest.id : null, note: purpose + " · " + (apr * 100).toFixed(1) + "% APR" }); } }
+    else if (t.type === "payment") { const l = find(s.loans, t.loan); if (l && l.status !== "paid" && from && amt > 0) { const pay = Math.min(amt, l.balance); if (from.balance >= pay) { from.balance = round2(from.balance - pay); l.balance = round2(l.balance - pay); l.payments.push({ ts, amount: pay }); if (l.balance <= 0.005) { l.balance = 0; l.status = "paid"; } log({ kind: "payment", amount: pay, from: from.id, to: l.id, note: "Payment · " + l.name }); } } }
+    else if (t.type === "clearActivity") s.transactions = [];
+    s.transactions = s.transactions.slice(0, 200);
+   });
+   return s;
+  }
+  function seedLog(now) {
+   return [
+    { type: "openAccount", time: now - 42 * DAY, name: "Everyday Checking", kind: "checking" },
+    { type: "openAccount", time: now - 140 * DAY, name: "High-Yield Savings", kind: "savings", accruedFrom: now - 6 * DAY },
+    { type: "friend", time: now - 140 * DAY, name: "Alex Rivera", handle: "@alex", color: "#3d6fd6" },
+    { type: "friend", time: now - 140 * DAY, name: "Sam Chen", handle: "@sam", color: "#0d9f6e" },
+    { type: "friend", time: now - 140 * DAY, name: "Jordan Lee", handle: "@jordan", color: "#c2703d" },
+    { type: "friend", time: now - 140 * DAY, name: "Priya Patel", handle: "@priya", color: "#7c5cd6" },
+    { type: "card", time: now - 30 * DAY, nickname: "Subscriptions", number: "4147000000008008", limit: 5000000, color: 0, quiet: 1 },
+    { type: "deposit", time: now - 42 * DAY, account: "a1", amount: 752837.17, note: "Opening deposit" },
+    { type: "deposit", time: now - 20 * DAY, account: "a2", amount: 1000000, note: "Opening deposit" },
+    { type: "send", time: now - 3 * DAY, from: "a1", to: "f1", amount: 42.5, note: "Dinner" }
+   ];
+  }
+  // @@REDUCER-END
+  // ===== Log <-> URL using Patch (https://breck.lol/patch.html) =====
+  // Each transaction is one Patch row: type=key=value=key=value...
+  // "at" holds unix seconds and is only written when the time changes.
+  // Rows are joined with "&", so the whole query string is the history file.
+  class Patch {
+    constructor(patchInput = "", rowDelimiter = "&", columnDelimiter = "=") {
+      this.rowDelimiter = rowDelimiter
+      this.columnDelimiter = columnDelimiter
+      // The pipeline of encodings. Operations will be run in order for encoding (and reveresed for decoding).
+      this.encoders = [
+        {
+          encode: (str) => encodeURIComponent(str),
+          decode: (str) => decodeURIComponent(str),
+        },
+        {
+          encode: (str) =>
+            this.replaceAll(
+              str,
+              columnDelimiter,
+              encodeURIComponent(columnDelimiter)
+            ),
+          decode: (str) =>
+            this.replaceAll(
+              str,
+              encodeURIComponent(columnDelimiter),
+              columnDelimiter
+            ),
+        },
+        {
+          encode: (str) =>
+            this.replaceAll(str, rowDelimiter, encodeURIComponent(rowDelimiter)),
+          decode: (str) =>
+            this.replaceAll(str, encodeURIComponent(rowDelimiter), rowDelimiter),
+        },
+        {
+          // Turn "%20" into "+" for prettier urls.
+          encode: (str) => str.replace(/\%20/g, "+"),
+          decode: (str) => str.replace(/\+/g, "%20"),
+        },
+      ]
+      if (typeof patchInput === "string")
+        this.uriEncodedString = patchInput.replace(/^\#/, "")
+      else if (Array.isArray(patchInput))
+        this.uriEncodedString = this.arrayToEncodedString(patchInput)
+      else this.uriEncodedString = this.objectToEncodedString(patchInput)
+    }
+    replaceAll(str, search, replace) {
+      return str.split(search).join(replace)
+    }
+    objectToEncodedString(obj) {
+      return Object.keys(obj)
+        .map((identifierCell) => {
+          const value = obj[identifierCell]
+          const valueCells = value instanceof Array ? value : [value]
+          const row = [identifierCell, ...valueCells].map((cell) =>
+            this.encodeCell(cell)
+          )
+          return row.join(this.columnDelimiter)
+        })
+        .join(this.rowDelimiter)
+    }
+    arrayToEncodedString(arr) {
+      return arr
+        .map((line) =>
+          line.map((cell) => this.encodeCell(cell)).join(this.columnDelimiter)
+        )
+        .join(this.rowDelimiter)
+    }
+    get array() {
+      return this.uriEncodedString
+        .split(this.rowDelimiter)
+        .map((line) =>
+          line.split(this.columnDelimiter).map((cell) => this.decodeCell(cell))
+        )
+    }
+    get object() {
+      const patchObj = {}
+      if (!this.uriEncodedString) return patchObj
+      this.array.forEach((cells) => {
+        const identifierCell = cells.shift()
+        patchObj[identifierCell] = cells.length > 1 ? cells : cells[0] // If a single value, collapse to a simple tuple. todo: sure about this design?
+      })
+      return patchObj
+    }
+    encodeCell(unencodedCell) {
+      return this.encoders.reduce(
+        (str, encoder) => encoder.encode(str),
+        unencodedCell
+      )
+    }
+    decodeCell(encodedCell) {
+      return this.encoders
+        .slice()
+        .reverse()
+        .reduce((str, encoder) => encoder.decode(str), encodedCell)
+    }
+  }
+  function logToPatch(txs) {
+   let prev = null;
+   return new Patch(txs.map(t => {
+    const row = [t.type], sec = Math.round(Number(t.time) / 1000);
+    if (sec !== prev) { row.push("at", String(sec)); prev = sec; }
+    Object.keys(t).forEach(k => { const v = t[k]; if (k !== "type" && k !== "time" && v !== undefined && v !== null && v !== "") row.push(k, String(v)); });
+    return row;
+   })).uriEncodedString;
+  }
+  function patchToLog(str) {
+   let prev = 0;
+   return new Patch(String(str || "").replace(/^\?/, "")).array.filter(r => r[0]).map(r => {
+    const t = { type: r[0] };
+    for (let i = 1; i + 1 < r.length; i += 2) { if (r[i] === "at") prev = Number(r[i + 1]) * 1000; else t[r[i]] = r[i + 1]; }
+    t.time = prev;
+    return t;
+   });
+  }
+  // Backward compatibility: old ?log=z... (deflate-raw) and ?log=p... (plain) links.
+  const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - str.length % 4) % 4)), c => c.charCodeAt(0));
+  async function decodeOldLog(enc) {
+   const bytes = unb64u(enc.slice(1));
+   if (enc[0] === "z") return new TextDecoder().decode(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+   return new TextDecoder().decode(bytes);
+  }
+  const nowSec = () => Math.floor(Date.now() / 1000) * 1000; // times are whole seconds so URLs replay exactly
+  const LAST_KEY = "bankOfBreck.lastLog"; // only remembers the last log for returning visitors
+  let txLog = seedLog(nowSec()), dirty = false;
+  let state = replay(txLog);
+  function persist() {
+   const qs = dirty ? logToPatch(txLog) : "";
+   history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + location.hash);
+   try { if (qs) localStorage.setItem(LAST_KEY, qs); else localStorage.removeItem(LAST_KEY); } catch (e) {}
+  }
   // ===== Model helpers =====
   const getAccount = id => state.accounts.find(a => a.id === id);
   const getFriend = id => state.friends.find(f => f.id === id);
@@ -818,64 +1001,11 @@ script
   const getCard = id => state.cards.find(c => c.id === id);
   const accountName = id => { const a = getAccount(id); return a ? a.name : "External"; };
   const friendName = id => { const f = getFriend(id); return f ? f.name : "External"; };
-  function addTx(t) { state.transactions.unshift(Object.assign({ id: uid("tx"), ts: Date.now() }, t)); state.transactions = state.transactions.slice(0, 200); }
-  function accruedInterest(a, now) {
-   if (a.type !== "savings") return 0;
-   const since = a.lastAccrued || a.createdAt || now;
-   const days = Math.max(0, (now - since) / DAY);
-   return round2(a.balance * (a.rate || 0) * days / 365);
-  }
   function totalAccrued() { const now = Date.now(); return round2(state.accounts.reduce((s, a) => s + accruedInterest(a, now), 0)); }
-  function loanApr(amount, term) {
-   const base = 0.059;
-   const size = Math.min(0.06, (Number(amount) || 0) / 50000 * 0.02);
-   const termAdj = term >= 48 ? 0.012 : term <= 12 ? -0.004 : 0;
-   return Math.max(0.039, base + size + termAdj);
-  }
   function monthlyPayment(l) {
    const r = (l.apr || 0) / 12, n = l.termMonths || 12;
    if (!r) return l.principal / n;
    return l.principal * r / (1 - Math.pow(1 + r, -n));
-  }
-  // ===== Mutations: return an error string, or null on success =====
-  function doTransfer(fromId, toId, amount, note) {
-   const from = getAccount(fromId), to = getAccount(toId);
-   if (!from || !to) return "Choose two accounts";
-   if (from.id === to.id) return "Pick two different accounts";
-   amount = round2(amount);
-   if (!(amount > 0)) return "Enter an amount greater than zero";
-   if (from.balance < amount) return "Not enough money in " + from.name;
-   from.balance = round2(from.balance - amount);
-   to.balance = round2(to.balance + amount);
-   addTx({ kind: "transfer", amount, from: from.id, to: to.id, note: note || to.name });
-   return null;
-  }
-  function doSend(fromId, friendId, amount, note) {
-   const from = getAccount(fromId), friend = getFriend(friendId);
-   if (!from) return "Choose an account";
-   if (!friend) return "Choose a friend";
-   amount = round2(amount);
-   if (!(amount > 0)) return "Enter an amount greater than zero";
-   if (from.balance < amount) return "Not enough money in " + from.name;
-   from.balance = round2(from.balance - amount);
-   addTx({ kind: "send", amount, from: from.id, to: friend.id, note: note || "" });
-   return null;
-  }
-  function doPayLoan(loanId, accountId, amount) {
-   const loan = getLoan(loanId), acc = getAccount(accountId);
-   if (!loan) return "Loan not found";
-   if (loan.status === "paid") return "This loan is already paid off";
-   if (!acc) return "Choose an account";
-   amount = round2(amount);
-   if (!(amount > 0)) return "Enter a payment amount";
-   const pay = Math.min(amount, loan.balance);
-   if (acc.balance < pay) return "Not enough money in " + acc.name;
-   acc.balance = round2(acc.balance - pay);
-   loan.balance = round2(loan.balance - pay);
-   loan.payments.push({ ts: Date.now(), amount: pay });
-   if (loan.balance <= 0.005) { loan.balance = 0; loan.status = "paid"; }
-   addTx({ kind: "payment", amount: pay, from: acc.id, to: loan.id, note: "Payment · " + loan.name });
-   return null;
   }
   // ===== Toast + commit =====
   let toastTimer = null, pendingUndo = null;
@@ -888,7 +1018,12 @@ script
    toastTimer = setTimeout(() => { t.classList.remove("show"); pendingUndo = null; }, undo ? 6000 : 2600);
   }
   const fail = message => toast(message);
-  function commit(message, undo) { Backend.save(state); render(); renderInterest(); if (message) toast(message, undo); }
+  function refresh() { state = replay(txLog); render(); renderInterest(); persist(); }
+  // Append transactions to the history file, then rebuild state from it.
+  function append() { const now = nowSec(); Array.from(arguments).forEach(t => txLog.push(Object.assign({ time: now }, t))); dirty = true; refresh(); return txLog.length; }
+  // Undo = drop the transaction from the end of the log (if it is still last).
+  const undoLast = len => () => { if (txLog.length === len) { txLog.pop(); refresh(); return true; } return false; };
+  function commit(message, undo) { if (message) toast(message, undo); }
   function runUndo() { if (pendingUndo) { pendingUndo.fn(); pendingUndo = null; } }
   // ===== Rendering =====
   const empty = text => '<div class="empty">' + esc(text) + "</div>";
@@ -1014,16 +1149,59 @@ script
    }
   }
   // ===== Modals =====
-  function closeModals() { $$(".modal.open").forEach(m => m.classList.remove("open")); }
+  function closeModals() { view = null; $$(".modal.open").forEach(m => m.classList.remove("open")); }
   function clearHash() { if (location.hash) history.replaceState(null, "", location.pathname + location.search); }
   function closeAndClear() { closeModals(); clearHash(); }
-  function openModal(name, opts) {
+  // ===== URL state: every form field in an open view is mirrored into the hash =====
+  // Param names per view. Values equal to the view's defaults are left out of the URL.
+  const FIELDS = {
+   "name": { name: "name-input" },
+   "new-account": { name: "account-name", type: "account-type", opening: "account-opening" },
+   "transfer": { from: "transfer-from", to: "transfer-to", amount: "transfer-amount", note: "transfer-note" },
+   "send": { to: "send-friend", from: "send-from", amount: "send-amount", note: "send-note" },
+   "deposit": { account: "deposit-account", amount: "deposit-amount" },
+   "apply-loan": { amount: "loan-amount", term: "loan-term", purpose: "loan-purpose" },
+   "new-card": { nickname: "card-nickname", limit: "card-limit", color: "card-color" },
+   "loan": { from: "pay-account", amount: "pay-amount" }
+  };
+  let view = null, viewDefaults = {};
+  const snapshot = key => { const out = {}, f = FIELDS[key] || {}; Object.keys(f).forEach(k => { out[k] = val(f[k]); }); return out; };
+  function applyFieldParams(key, params) {
+   const f = FIELDS[key];
+   if (!f || !params) return;
+   Object.keys(f).forEach(k => {
+    if (!Object.prototype.hasOwnProperty.call(params, k)) return;
+    const el = document.getElementById(f[k]);
+    if (!el) return;
+    let v = params[k];
+    if (el.tagName === "SELECT" && !Array.from(el.options).some(o => o.value === v)) {
+     // Friendly fallback: allow friend handles (to=sam or to=@sam) in send links.
+     const fr = f[k] === "send-friend" && state.friends.find(x => x.handle.toLowerCase() === "@" + String(v).replace(/^@/, "").toLowerCase());
+     if (!fr) return;
+     v = fr.id;
+    }
+    el.value = v;
+   });
+  }
+  function syncUrl() {
+   if (!view) return;
+   const cur = snapshot(view.key), parts = [];
+   Object.keys(cur).forEach(k => { if (cur[k] !== "" && cur[k] !== viewDefaults[k]) parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(cur[k])); });
+   const hash = "#" + view.path + (view.arg ? "/" + view.arg : "") + (parts.length ? "?" + parts.join("&") : "");
+   if (location.hash !== hash) history.replaceState(null, "", location.pathname + location.search + hash);
+  }
+  function openModal(name, opts, v) {
    closeModals();
    const el = document.getElementById("modal-" + name);
    if (!el) return;
+   v = v || { path: name, arg: "", key: name };
    const form = el.querySelector("form");
    if (form) form.reset();
-   populate(name, opts);
+   populate(name, {});
+   viewDefaults = snapshot(v.key);
+   if (opts && Object.keys(opts).length) { populate(name, opts); applyFieldParams(v.key, opts); }
+   view = v;
+   syncUrl();
    if (name === "apply-loan") updateLoanPreview();
    el.classList.add("open");
    const field = el.querySelector("input:not([type=hidden]), select");
@@ -1038,7 +1216,7 @@ script
    $("#detail-body").innerHTML =
     '<div class="detail-hero"><span class="k">Balance</span><div class="detail-big">' + money(a.balance) + '</div><div class="muted">' + label(a.type) + " •• " + a.number + (a.type === "savings" ? " · " + (a.rate * 100).toFixed(2) + "% APY" : "") + "</div></div>" +
     '<div class="detail-actions"><a class="btn small" href="#transfer?from=' + a.id + '">Transfer out</a><a class="btn small" href="#deposit?account=' + a.id + '">Add money</a>' + (a.balance < 0.01 ? '<button class="btn danger small" data-action="close-account" data-account="' + a.id + '">Close account</button>' : "") + "</div>";
-   openModal("detail");
+   openModal("detail", null, { path: "account", arg: a.id, key: "account" });
   }
   function openCardDetail(id) {
    const c = getCard(id);
@@ -1047,9 +1225,9 @@ script
    $("#detail-body").innerHTML =
     '<div class="bigcard" style="background:' + c.gradient + '"><div class="vc-top"><div><div class="vc-nick">' + esc(c.nickname) + '</div><div class="vc-kind">Virtual card</div></div><span class="vc-chip"></span></div><div class="vc-num">' + maskCard(c.number) + '</div><div class="vc-bottom"><span>EXP ' + c.expiry + '</span><span>CVV ' + c.cvv + '</span><span>Limit ' + money(c.limit) + "/mo</span></div></div>" +
     '<div class="detail-actions">' + (c.status === "active" ? '<button class="btn danger" data-action="cancel-card" data-card="' + c.id + '">Cancel card</button>' : '<span class="pill">Canceled</span>') + '<button class="btn ghost" data-action="close">Close</button></div>';
-   openModal("detail");
+   openModal("detail", null, { path: "card", arg: c.id, key: "card" });
   }
-  function openLoanDetail(id) {
+  function openLoanDetail(id, params) {
    const l = getLoan(id);
    if (!l) return;
    const paid = round2(l.principal - l.balance);
@@ -1062,7 +1240,7 @@ script
     (l.status === "paid"
      ? '<div class="paid-note">This loan is paid off. Nice work.</div><div class="modal-actions inline"><button class="btn ghost" data-action="close">Close</button></div>'
      : '<form data-form="pay-loan"><input type="hidden" id="pay-loan-id" value="' + l.id + '"><div class="field"><label for="pay-account">Pay from</label><select id="pay-account">' + accountOptions() + '</select></div><div class="field"><label for="pay-amount">Payment amount</label><input id="pay-amount" type="number" min="0.01" step="0.01" value="' + monthly.toFixed(2) + '"></div><div class="modal-actions inline"><button class="btn ghost" type="button" data-action="close">Close</button><button class="btn primary" type="submit">Make payment</button></div></form>');
-   openModal("detail");
+   openModal("detail", params, { path: "loan", arg: l.id, key: "loan" });
   }
   // ===== Forms =====
   const val = id => { const el = document.getElementById(id); return el ? el.value : ""; };
@@ -1081,7 +1259,7 @@ script
    if (name === "name") {
     const nm = val("name-input").trim();
     if (!nm) return fail("Enter your name");
-    state.holder = nm;
+    append({ type: "name", name: nm });
     commit("Nice to meet you, " + nm);
     return closeAndClear();
    }
@@ -1089,23 +1267,31 @@ script
     const type = val("account-type");
     const nm = val("account-name").trim() || (type === "savings" ? "Savings" : "Checking");
     const opening = round2(parseFloat(val("account-opening")) || 0);
-    const acc = { id: uid("acct"), name: nm, type, number: digits(4), balance: opening, rate: type === "savings" ? 0.0425 : 0.001, createdAt: Date.now(), lastAccrued: Date.now() };
-    state.accounts.push(acc);
-    if (opening > 0) addTx({ kind: "deposit", amount: opening, to: acc.id, note: "Opening deposit · " + nm });
+    const id = "a" + (txLog.filter(t => t.type === "openAccount").length + 1);
+    const txs = [{ type: "openAccount", name: nm, kind: type }];
+    if (opening > 0) txs.push({ type: "deposit", account: id, amount: opening, note: "Opening deposit · " + nm });
+    append.apply(null, txs);
     commit("Opened " + nm + " with " + money(opening));
     return closeAndClear();
    }
    if (name === "transfer") {
-    const err = doTransfer(val("transfer-from"), val("transfer-to"), parseFloat(val("transfer-amount")), val("transfer-note").trim());
-    if (err) return fail(err);
-    commit("Transferred " + money(parseFloat(val("transfer-amount"))));
+    const from = getAccount(val("transfer-from")), to = getAccount(val("transfer-to")), amount = round2(parseFloat(val("transfer-amount")));
+    if (!from || !to) return fail("Choose two accounts");
+    if (from.id === to.id) return fail("Pick two different accounts");
+    if (!(amount > 0)) return fail("Enter an amount greater than zero");
+    if (from.balance < amount) return fail("Not enough money in " + from.name);
+    append({ type: "transfer", from: from.id, to: to.id, amount, note: val("transfer-note").trim() });
+    commit("Transferred " + money(amount));
     return closeAndClear();
    }
    if (name === "send") {
-    const friend = getFriend(val("send-friend"));
-    const err = doSend(val("send-from"), val("send-friend"), parseFloat(val("send-amount")), val("send-note").trim());
-    if (err) return fail(err);
-    commit("Sent " + money(parseFloat(val("send-amount"))) + " to " + (friend ? friend.name : "friend"));
+    const from = getAccount(val("send-from")), friend = getFriend(val("send-friend")), amount = round2(parseFloat(val("send-amount")));
+    if (!from) return fail("Choose an account");
+    if (!friend) return fail("Choose a friend");
+    if (!(amount > 0)) return fail("Enter an amount greater than zero");
+    if (from.balance < amount) return fail("Not enough money in " + from.name);
+    append({ type: "send", from: from.id, to: friend.id, amount, note: val("send-note").trim() });
+    commit("Sent " + money(amount) + " to " + friend.name);
     return closeAndClear();
    }
    if (name === "deposit") {
@@ -1113,8 +1299,7 @@ script
     const amount = round2(parseFloat(val("deposit-amount")));
     if (!acc) return fail("Choose an account");
     if (!(amount > 0)) return fail("Enter an amount");
-    acc.balance = round2(acc.balance + amount);
-    addTx({ kind: "deposit", amount, to: acc.id, note: "Deposit · " + acc.name });
+    append({ type: "deposit", account: acc.id, amount });
     commit("Added " + money(amount) + " to " + acc.name);
     return closeAndClear();
    }
@@ -1124,70 +1309,71 @@ script
     const purpose = val("loan-purpose").trim() || "Personal loan";
     if (!(amount > 0)) return fail("Enter a loan amount");
     const apr = loanApr(amount, term);
-    const dest = state.accounts.find(a => a.type === "checking") || state.accounts[0];
-    const loan = { id: uid("loan"), name: purpose, principal: amount, apr, termMonths: term, balance: amount, status: "active", createdAt: Date.now(), payments: [] };
-    state.loans.push(loan);
-    if (dest) dest.balance = round2(dest.balance + amount);
-    addTx({ kind: "loan", amount, to: dest ? dest.id : null, note: purpose + " · " + (apr * 100).toFixed(1) + "% APR" });
+    append({ type: "loan", amount, term, purpose });
     commit("Approved " + money(amount) + " at " + (apr * 100).toFixed(1) + "% APR");
     return closeAndClear();
    }
    if (name === "new-card") {
     const nick = val("card-nickname").trim() || "Virtual card";
     const limit = round2(parseFloat(val("card-limit")) || 500);
-    const gradient = GRADIENTS[parseInt(val("card-color")) % GRADIENTS.length];
-    const card = { id: uid("card"), nickname: nick, number: digits(16), expiry: expDate(), cvv: digits(3), limit, status: "active", createdAt: Date.now(), gradient, spent: 0 };
-    state.cards.push(card);
-    addTx({ kind: "card", amount: 0, to: card.id, note: 'Created card "' + nick + '"' });
+    append({ type: "card", nickname: nick, limit, color: parseInt(val("card-color")) || 0 });
     commit('Card "' + nick + '" is ready to use');
     return closeAndClear();
    }
    if (name === "pay-loan") {
-    const loanId = val("pay-loan-id");
-    const err = doPayLoan(loanId, val("pay-account"), parseFloat(val("pay-amount")));
-    if (err) return fail(err);
+    const loanId = val("pay-loan-id"), loan = getLoan(loanId), acc = getAccount(val("pay-account")), amount = round2(parseFloat(val("pay-amount")));
+    if (!loan) return fail("Loan not found");
+    if (loan.status === "paid") return fail("This loan is already paid off");
+    if (!acc) return fail("Choose an account");
+    if (!(amount > 0)) return fail("Enter a payment amount");
+    if (acc.balance < Math.min(amount, loan.balance)) return fail("Not enough money in " + acc.name);
+    append({ type: "payment", loan: loanId, from: acc.id, amount });
     commit("Payment made");
     return openLoanDetail(loanId);
    }
   }
-  // ===== Gradients + dates =====
-  const GRADIENTS = ["linear-gradient(135deg,#0f766e,#0d9f6e)", "linear-gradient(135deg,#1e293b,#0f172a)", "linear-gradient(135deg,#b45309,#f59e0b)", "linear-gradient(135deg,#6d28d9,#8b5cf6)", "linear-gradient(135deg,#1d4ed8,#3b82f6)", "linear-gradient(135deg,#9f1239,#ef4444)", "linear-gradient(135deg,#0e7490,#06b6d4)"];
-  function expDate() { const d = new Date(); d.setFullYear(d.getFullYear() + 3); return String(d.getMonth() + 1).padStart(2, "0") + "/" + String(d.getFullYear()).slice(-2); }
   // ===== Actions =====
   function collectInterest() {
-   const now = Date.now();
-   let total = 0;
-   state.accounts.forEach(a => {
-    if (a.type !== "savings") return;
-    const amt = accruedInterest(a, now);
-    if (amt > 0) { a.balance = round2(a.balance + amt); total = round2(total + amt); addTx({ kind: "interest", amount: amt, to: a.id, note: "Interest · " + a.name }); }
-    a.lastAccrued = now;
-   });
+   const total = totalAccrued();
    if (!total) return fail("No interest to collect yet");
+   append({ type: "interest" });
    commit("Collected " + money(total) + " in interest");
   }
   function cancelCard(id) {
    const c = getCard(id);
    if (!c || c.status !== "active") return;
-   c.status = "canceled";
-   addTx({ kind: "card", amount: 0, to: c.id, note: 'Canceled card "' + c.nickname + '"' });
-   Backend.save(state); render();
+   const len = append({ type: "cancelCard", card: id });
    if ($("#modal-detail").classList.contains("open")) openCardDetail(id);
-   toast('Canceled "' + c.nickname + '"', { label: "Undo", fn: () => { c.status = "active"; Backend.save(state); render(); toast('Restored "' + c.nickname + '"'); } });
+   const undo = undoLast(len);
+   toast('Canceled "' + c.nickname + '"', { label: "Undo", fn: () => { if (undo()) toast('Restored "' + c.nickname + '"'); } });
   }
   function closeAccount(id) {
    const a = getAccount(id);
    if (!a) return;
    if (a.balance > 0.01) return fail("Move the money out first");
-   const idx = state.accounts.indexOf(a);
-   state.accounts.splice(idx, 1);
-   Backend.save(state); render(); closeAndClear();
-   toast("Closed " + a.name, { label: "Undo", fn: () => { state.accounts.splice(idx, 0, a); Backend.save(state); render(); } });
+   const len = append({ type: "closeAccount", account: id });
+   closeAndClear();
+   toast("Closed " + a.name, { label: "Undo", fn: undoLast(len) });
   }
-  function clearActivity() { state.transactions = []; commit("Activity cleared"); }
+  function clearActivity() { append({ type: "clearActivity" }); commit("Activity cleared"); }
   function resetAll() {
    if (!confirm("Reset Bank of Breck and erase all local data?")) return;
-   state = seed(); Backend.save(state); render(); renderInterest(); closeAndClear(); toast("Fresh start");
+   txLog = seedLog(nowSec()); dirty = false; refresh(); closeAndClear(); toast("Fresh start");
+  }
+  // ===== History file view =====
+  function openHistory() {
+   $("#detail-title").textContent = "History file";
+   $("#detail-body").innerHTML =
+    '<p class="muted">Every change is a transaction in this ScrollSet. The whole history lives in the URL and is replayed on load.</p>' +
+    '<pre style="max-height:50vh;overflow:auto;font-size:12px;line-height:1.45;white-space:pre-wrap;background:var(--surface-2);padding:12px;border-radius:11px;margin:12px 0">' + esc(logToText(txLog)) + "</pre>" +
+    '<div class="detail-actions"><button class="btn small" data-action="download-log">Download bank.scroll</button><button class="btn ghost small" data-action="close">Close</button></div>';
+   openModal("detail", null, { path: "history", arg: "", key: "history" });
+  }
+  function downloadLog() {
+   const url = URL.createObjectURL(new Blob([logToText(txLog)], { type: "text/plain" }));
+   const link = document.createElement("a");
+   link.href = url; link.download = "bank.scroll"; document.body.appendChild(link); link.click(); link.remove();
+   setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   // ===== Routing: deep links for every view =====
   function parseHash() {
@@ -1226,7 +1412,8 @@ script
    if (p === "deposit") return openModal("deposit", r.params);
    if (p === "account" && r.arg) return openAccountDetail(r.arg);
    if (p === "card" && r.arg) return openCardDetail(r.arg);
-   if (p === "loan" && r.arg) return openLoanDetail(r.arg);
+   if (p === "loan" && r.arg) return openLoanDetail(r.arg, r.params);
+   if (p === "history") return openHistory();
    closeModals();
   }
   // ===== Events =====
@@ -1242,10 +1429,11 @@ script
     const action = el.getAttribute("data-action");
     if (action === "cancel-card") { e.preventDefault(); e.stopPropagation(); return cancelCard(el.getAttribute("data-card")); }
     if (action === "close-account") { e.preventDefault(); return closeAccount(el.getAttribute("data-account")); }
-    if (action === "edit-name") { e.preventDefault(); return openModal("name"); }
+    if (action === "edit-name") { e.preventDefault(); return history.pushState(null, "", location.pathname + location.search + "#name"), route(); }
     if (action === "interest") { e.preventDefault(); return collectInterest(); }
     if (action === "toast-undo") { e.preventDefault(); return runUndo(); }
     if (action === "reset") { e.preventDefault(); return resetAll(); }
+    if (action === "download-log") { e.preventDefault(); return downloadLog(); }
     if (action === "clear-activity") { e.preventDefault(); return clearActivity(); }
     if (action === "close") { e.preventDefault(); return closeAndClear(); }
    }
@@ -1253,14 +1441,28 @@ script
   });
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeAndClear(); });
   window.addEventListener("hashchange", route);
-  window.addEventListener("storage", e => { if (e.key === STORAGE_KEY) { state = Backend.load() || state; render(); renderInterest(); } });
+  window.addEventListener("popstate", route);
+  ["input", "change"].forEach(t => document.addEventListener(t, e => { if (view && e.target.closest && e.target.closest(".modal.open")) syncUrl(); }));
   ["loan-amount", "loan-term"].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener("input", updateLoanPreview); el.addEventListener("change", updateLoanPreview); } });
-  // ===== Boot =====
-  renderGreeting();
-  render();
-  renderInterest();
-  route();
-  setInterval(renderInterest, 1000);
+  // ===== Boot: read the history file from the URL and replay it =====
+  async function boot() {
+   let qs = location.search.replace(/^\?/, "");
+   if (!qs && !location.hash) { try { qs = localStorage.getItem(LAST_KEY) || ""; } catch (e) {} }
+   if (qs) {
+    try {
+     const old = new URLSearchParams(qs).get("log");
+     const txs = old ? parseLog(await decodeOldLog(old)) : patchToLog(qs);
+     if (txs.length) { txLog = txs.map(t => Object.assign(t, { time: Number(t.time) || 0 })); dirty = true; }
+    } catch (e) { toast("Could not read the history in this link"); }
+   }
+   state = replay(txLog);
+   render();
+   renderInterest();
+   persist();
+   route();
+   setInterval(renderInterest, 1000);
+  }
+  boot();
   // Expose a tiny API so a backend can be added later without touching the UI.
-  window.BankOfBreck = { get state() { return state; }, Backend, render };
+  window.BankOfBreck = { get state() { return state; }, get log() { return logToText(txLog); }, parseLog, replay, render };
  })();
