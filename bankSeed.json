@@ -1,0 +1,22 @@
+[
+  {
+    "type": "openAccount",
+    "name": "Everyday Checking",
+    "time": "-42d",
+    "kind": "checking"
+  },
+  {
+    "type": "friend",
+    "color": "#3d6fd6",
+    "name": "Breck Yunits",
+    "time": "-140d",
+    "handle": "@breckyunits"
+  },
+  {
+    "type": "deposit",
+    "time": "-42d",
+    "account": "a1",
+    "amount": "740000.00",
+    "note": "Opening deposit"
+  }
+]

@@ -1,0 +1,90 @@
+// Parsers for the starter transactions at the top of readme.scroll.
+// Each transaction is a ScrollSet concept that starts with a "type" line.
+// The lines print nothing on the page; buildConcepts turns them into bankSeed.json.
+abstractTxMeasureParser
+ extends abstractStringMeasureParser
+ javascript
+  buildHtml() { return "" }
+txTypeParser
+ cue type
+ extends abstractTxMeasureParser
+ description Transaction type: openAccount, friend, card, deposit, transfer, send, loan, payment, interest, name...
+ float sortIndex 1
+ boolean isMeasureRequired true
+ boolean isConceptDelimiter true
+txTimeParser
+ cue time
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txNameParser
+ cue name
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txKindParser
+ cue kind
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txAccruedFromParser
+ cue accruedFrom
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txHandleParser
+ cue handle
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txColorParser
+ cue color
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txNicknameParser
+ cue nickname
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txNumberParser
+ cue number
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txLimitParser
+ cue limit
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txQuietParser
+ cue quiet
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txAccountParser
+ cue account
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txAmountParser
+ cue amount
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txNoteParser
+ cue note
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txFromParser
+ cue from
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txToParser
+ cue to
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txLoanParser
+ cue loan
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txCardParser
+ cue card
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txTermParser
+ cue term
+ extends abstractTxMeasureParser
+ float sortIndex 2
+txPurposeParser
+ cue purpose
+ extends abstractTxMeasureParser
+ float sortIndex 2

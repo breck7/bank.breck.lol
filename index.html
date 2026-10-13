@@ -7,11 +7,11 @@
  <style>@media print {.doNotPrint {display: none !important;}}</style>
  <link rel="canonical" href="https://bank.breck.lol/">
  <meta name="viewport" content="width=device-width,initial-scale=1">
- <meta name="description" content="Bank of Breck is a front-end-only bank. Open unlimited checking and savings accounts, transfer money, send to friends, earn interest, apply for and pay off loans, and spin up unlimited virtual cards with nicknames you can cancel in one click. Everything is stored locally in your browser.">
+ <meta name="description" content="Bank of Breck is a front-end-only bank. Open unlimited checking and savings accounts, transfer money, send to friends, earn interest, apply for and pay off loans, and spin up unlimited virtual cards with nicknames you can cancel in one click. Everything is stored in the URL.">
  <meta name="keywords" content="bank, virtual bank, checking, savings, loans, virtual cards, ScrollSet, front-end">
  <meta name="generator" content="Scroll v180.0.1">
  <meta property="og:title" content="Bank of Breck — your friendly virtual bank">
- <meta property="og:description" content="Bank of Breck is a front-end-only bank. Open unlimited checking and savings accounts, transfer money, send to friends, earn interest, apply for and pay off loans, and spin up unlimited virtual cards with nicknames you can cancel in one click. Everything is stored locally in your browser.">
+ <meta property="og:description" content="Bank of Breck is a front-end-only bank. Open unlimited checking and savings accounts, transfer money, send to friends, earn interest, apply for and pay off loans, and spin up unlimited virtual cards with nicknames you can cancel in one click. Everything is stored in the URL.">
  <meta property="og:image" content="https://bank.breck.lol/og.png">
  <link rel="icon" href="favicon.svg">
  <link rel="source" type="application/git" title="Source Code Repository" href="readme.scroll">
@@ -19,6 +19,28 @@
  <meta name="twitter:card" content="summary_large_image">
 </head>
 <body>
+<script>window.bankSeed = [
+  {
+    "type": "openAccount",
+    "name": "Everyday Checking",
+    "time": "-42d",
+    "kind": "checking"
+  },
+  {
+    "type": "friend",
+    "color": "#3d6fd6",
+    "name": "Breck Yunits",
+    "time": "-140d",
+    "handle": "@breckyunits"
+  },
+  {
+    "type": "deposit",
+    "time": "-42d",
+    "account": "a1",
+    "amount": "740000.00",
+    "note": "Opening deposit"
+  }
+]</script>
 <style>/* ===== tokens ===== */
 :root{--bg:#f1f0e9;--surface:#fffefb;--surface-2:#f8f7f1;--ink:#13221c;--muted:#626f68;--line:#e3e3d8;--line-2:#d3d5c7;--accent:#0d9f6e;--accent-dark:#0a7c55;--accent-soft:#e2f5ec;--blue:#3d6fd6;--blue-soft:#e8eefc;--amber:#b8860b;--amber-soft:#f8efd7;--danger:#d64545;--danger-soft:#fbe8e6;--radius:18px;--shadow:0 1px 2px rgba(19,34,28,.05),0 18px 40px -24px rgba(19,34,28,.4);--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;--serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color-scheme:light}
 /* ===== base ===== */
@@ -179,7 +201,7 @@ footer .spacer{flex:1}
 @media(max-width:940px){.row{grid-template-columns:minmax(0,1fr)}.c4,.c5,.c7,.c8,.c12{grid-column:auto}}
 @media(max-width:820px){.navlinks{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;margin:0;padding:6px 4px;justify-content:space-around;background:rgba(255,254,251,.97);backdrop-filter:blur(12px);border-top:1px solid var(--line)}.navlinks a{flex:1;text-align:center;padding:7px 2px;font-size:12px}body{padding-bottom:70px}.total{font-size:clamp(34px,10vw,44px)}}
 @media(max-width:520px){.stats{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.networth{display:none}}</style>
-<header id="particle12" class="topbar"><div id="particle1" class="topbar-inner wrap" class="topbar-inner wrap"><a id="particle1" href="#/" class="brand"><span id="particle2" class="brand-mark">B</span>
+<header id="particle67" class="topbar"><div id="particle1" class="topbar-inner wrap" class="topbar-inner wrap"><a id="particle1" href="#/" class="brand"><span id="particle2" class="brand-mark">B</span>
 <span id="particle3" >Bank of Breck</span></a>
 <nav id="particle2" class="navlinks"><a id="particle1" href="#/" data-nav="dashboard" >Dashboard</a>
 <a id="particle2" href="#accounts" data-nav="accounts" >Accounts</a>
@@ -189,7 +211,7 @@ footer .spacer{flex:1}
 <a id="particle6" href="#activity" data-nav="activity" >Activity</a></nav>
 <div id="particle3" class="networth"><span id="particle1" class="k">NET WORTH</span>
 <strong id="net-worth" class="v">$0.00</strong></div></div></header>
-<main id="particle14" class="wrap"><div id="particle1" class="row"><section class="card pad c5" id="sec-overview" class="card pad c5"><button id="greeting" data-action="edit-name" title="Tell us your name" class="greeting">Good morning.</button>
+<main id="particle69" class="wrap"><div id="particle1" class="row"><section class="card pad c5" id="sec-overview" class="card pad c5"><button id="greeting" data-action="edit-name" title="Tell us your name" class="greeting">Good morning.</button>
 <h1 id="particle3" class="hero-title">Money is just a number.</h1>
 <p id="particle4" class="sub">At Bank of Breck, <i>you</i> tell <i>us</i> how much money you have.</p>
 <div id="total-balance" class="total">$0.00</div>
@@ -228,7 +250,7 @@ footer .spacer{flex:1}
 <div id="particle2" class="spacer"></div>
 <button id="particle3" class="btn ghost small" data-action="clear-activity" class="btn ghost small">Clear</button></div>
 <div id="activity-list" class="activity"></div></section></div></main>
-<footer id="particle16" class="wrap"><span id="particle1" >Bank of Breck — a front-end-only demo. No real money, no server.</span>
+<footer id="particle71" class="wrap"><span id="particle1" >Bank of Breck — a front-end-only demo. No real money, no server.</span>
 <div id="particle2" class="spacer"></div>
 <a id="particle3" class="btn ghost small" href="#history" class="btn ghost small">History file</a>
 <button id="particle4" class="btn ghost small" data-action="reset" class="btn ghost small">Reset demo data</button></footer>
@@ -377,7 +399,7 @@ footer .spacer{flex:1}
   const n = { a: 0, f: 0, c: 0, l: 0 };
   const find = (list, id) => list.find(x => x.id === id);
   txs.forEach((t, i) => {
-   const r = rng(hashStr(i + "|" + t.time + "|" + t.type));
+   const r = rng(hashStr(i + "|" + t.type + "|" + (t.name || t.nickname || "")));
    const dg = k => Array.from({ length: k }, () => Math.floor(r() * 10)).join("");
    const ts = Number(t.time) || 0, amt = round2(t.amount);
    const log = o => s.transactions.unshift(Object.assign({ id: "t" + (i + 1), ts }, o));
@@ -399,19 +421,22 @@ footer .spacer{flex:1}
   });
   return s;
  }
+ // Starter transactions come from the ScrollSet at the top of readme.scroll (window.bankSeed).
+ function seedTime(v, now) {
+  v = String(v == null ? "" : v).trim();
+  if (!v) return now;
+  const rel = v.match(/^([+-]?\d+(?:\.\d+)?)([dhms])$/);
+  if (rel) return Math.round(now + Number(rel[1]) * { d: DAY, h: 3600000, m: 60000, s: 1000 }[rel[2]]);
+  if (/^\d{4}-\d{1,2}-\d{1,2}/.test(v)) return Date.parse(v);
+  return Number(v) || now;
+ }
  function seedLog(now) {
-  return [
-   { type: "openAccount", time: now - 42 * DAY, name: "Everyday Checking", kind: "checking" },
-   { type: "openAccount", time: now - 140 * DAY, name: "High-Yield Savings", kind: "savings", accruedFrom: now - 6 * DAY },
-   { type: "friend", time: now - 140 * DAY, name: "Alex Rivera", handle: "@alex", color: "#3d6fd6" },
-   { type: "friend", time: now - 140 * DAY, name: "Sam Chen", handle: "@sam", color: "#0d9f6e" },
-   { type: "friend", time: now - 140 * DAY, name: "Jordan Lee", handle: "@jordan", color: "#c2703d" },
-   { type: "friend", time: now - 140 * DAY, name: "Priya Patel", handle: "@priya", color: "#7c5cd6" },
-   { type: "card", time: now - 30 * DAY, nickname: "Subscriptions", number: "4147000000008008", limit: 5000000, color: 0, quiet: 1 },
-   { type: "deposit", time: now - 42 * DAY, account: "a1", amount: 752837.17, note: "Opening deposit" },
-   { type: "deposit", time: now - 20 * DAY, account: "a2", amount: 1000000, note: "Opening deposit" },
-   { type: "send", time: now - 3 * DAY, from: "a1", to: "f1", amount: 42.5, note: "Dinner" }
-  ];
+  return (window.bankSeed || []).map(t => {
+   const o = Object.assign({}, t);
+   o.time = seedTime(t.time, now);
+   if (t.accruedFrom) o.accruedFrom = seedTime(t.accruedFrom, now);
+   return o;
+  });
  }
  // @@REDUCER-END
  // ===== Log <-> URL using Patch (https://breck.lol/patch.html) =====
@@ -529,19 +554,15 @@ footer .spacer{flex:1}
    return t;
   });
  }
- // Backward compatibility: old ?log=z... (deflate-raw) and ?log=p... (plain) links.
- const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - str.length % 4) % 4)), c => c.charCodeAt(0));
- async function decodeOldLog(enc) {
-  const bytes = unb64u(enc.slice(1));
-  if (enc[0] === "z") return new TextDecoder().decode(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
-  return new TextDecoder().decode(bytes);
- }
  const nowSec = () => Math.floor(Date.now() / 1000) * 1000; // times are whole seconds so URLs replay exactly
  const LAST_KEY = "bankOfBreck.lastLog"; // only remembers the last log for returning visitors
- let txLog = seedLog(nowSec()), dirty = false;
- let state = replay(txLog);
+ // The URL only carries transactions made after the starter set (deltas), so default links stay short.
+ const seedNow = nowSec();
+ let txLog = [];
+ const fullLog = () => seedLog(seedNow).concat(txLog);
+ let state = replay(fullLog());
  function persist() {
-  const qs = dirty ? logToPatch(txLog) : "";
+  const qs = txLog.length ? logToPatch(txLog) : "";
   history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + location.hash);
   try { if (qs) localStorage.setItem(LAST_KEY, qs); else localStorage.removeItem(LAST_KEY); } catch (e) {}
  }
@@ -569,9 +590,9 @@ footer .spacer{flex:1}
   toastTimer = setTimeout(() => { t.classList.remove("show"); pendingUndo = null; }, undo ? 6000 : 2600);
  }
  const fail = message => toast(message);
- function refresh() { state = replay(txLog); render(); renderInterest(); persist(); }
+ function refresh() { state = replay(fullLog()); render(); renderInterest(); persist(); }
  // Append transactions to the history file, then rebuild state from it.
- function append() { const now = nowSec(); Array.from(arguments).forEach(t => txLog.push(Object.assign({ time: now }, t))); dirty = true; refresh(); return txLog.length; }
+ function append() { const now = nowSec(); Array.from(arguments).forEach(t => txLog.push(Object.assign({ time: now }, t))); refresh(); return txLog.length; }
  // Undo = drop the transaction from the end of the log (if it is still last).
  const undoLast = len => () => { if (txLog.length === len) { txLog.pop(); refresh(); return true; } return false; };
  function commit(message, undo) { if (message) toast(message, undo); }
@@ -818,7 +839,7 @@ footer .spacer{flex:1}
    const type = val("account-type");
    const nm = val("account-name").trim() || (type === "savings" ? "Savings" : "Checking");
    const opening = round2(parseFloat(val("account-opening")) || 0);
-   const id = "a" + (txLog.filter(t => t.type === "openAccount").length + 1);
+   const id = "a" + (fullLog().filter(t => t.type === "openAccount").length + 1);
    const txs = [{ type: "openAccount", name: nm, kind: type }];
    if (opening > 0) txs.push({ type: "deposit", account: id, amount: opening, note: "Opening deposit · " + nm });
    append.apply(null, txs);
@@ -909,19 +930,19 @@ footer .spacer{flex:1}
  function clearActivity() { append({ type: "clearActivity" }); commit("Activity cleared"); }
  function resetAll() {
   if (!confirm("Reset Bank of Breck and erase all local data?")) return;
-  txLog = seedLog(nowSec()); dirty = false; refresh(); closeAndClear(); toast("Fresh start");
+  txLog = []; refresh(); closeAndClear(); toast("Fresh start");
  }
  // ===== History file view =====
  function openHistory() {
   $("#detail-title").textContent = "History file";
   $("#detail-body").innerHTML =
    '<p class="muted">Every change is a transaction in this ScrollSet. The whole history lives in the URL and is replayed on load.</p>' +
-   '<pre style="max-height:50vh;overflow:auto;font-size:12px;line-height:1.45;white-space:pre-wrap;background:var(--surface-2);padding:12px;border-radius:11px;margin:12px 0">' + esc(logToText(txLog)) + "</pre>" +
+   '<pre style="max-height:50vh;overflow:auto;font-size:12px;line-height:1.45;white-space:pre-wrap;background:var(--surface-2);padding:12px;border-radius:11px;margin:12px 0">' + esc(logToText(fullLog())) + "</pre>" +
    '<div class="detail-actions"><button class="btn small" data-action="download-log">Download bank.scroll</button><button class="btn ghost small" data-action="close">Close</button></div>';
   openModal("detail", null, { path: "history", arg: "", key: "history" });
  }
  function downloadLog() {
-  const url = URL.createObjectURL(new Blob([logToText(txLog)], { type: "text/plain" }));
+  const url = URL.createObjectURL(new Blob([logToText(fullLog())], { type: "text/plain" }));
   const link = document.createElement("a");
   link.href = url; link.download = "bank.scroll"; document.body.appendChild(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -1001,12 +1022,11 @@ footer .spacer{flex:1}
   if (!qs && !location.hash) { try { qs = localStorage.getItem(LAST_KEY) || ""; } catch (e) {} }
   if (qs) {
    try {
-    const old = new URLSearchParams(qs).get("log");
-    const txs = old ? parseLog(await decodeOldLog(old)) : patchToLog(qs);
-    if (txs.length) { txLog = txs.map(t => Object.assign(t, { time: Number(t.time) || 0 })); dirty = true; }
+    const txs = patchToLog(qs);
+    if (txs.length) txLog = txs;
    } catch (e) { toast("Could not read the history in this link"); }
   }
-  state = replay(txLog);
+  state = replay(fullLog());
   render();
   renderInterest();
   persist();
@@ -1015,7 +1035,7 @@ footer .spacer{flex:1}
  }
  boot();
  // Expose a tiny API so a backend can be added later without touching the UI.
- window.BankOfBreck = { get state() { return state; }, get log() { return logToText(txLog); }, parseLog, replay, render };
+ window.BankOfBreck = { get state() { return state; }, get log() { return logToText(fullLog()); }, parseLog, replay, render };
 })();</script>
 </body>
 </html>

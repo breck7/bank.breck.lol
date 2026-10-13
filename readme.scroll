@@ -1,12 +1,42 @@
+import transactions.parsers
 permalink index.html
 buildHtml
 title Bank of Breck — your friendly virtual bank
-description Bank of Breck is a front-end-only bank. Open unlimited checking and savings accounts, transfer money, send to friends, earn interest, apply for and pay off loans, and spin up unlimited virtual cards with nicknames you can cancel in one click. Everything is stored locally in your browser.
+description Bank of Breck is a front-end-only bank. Open unlimited checking and savings accounts, transfer money, send to friends, earn interest, apply for and pay off loans, and spin up unlimited virtual cards with nicknames you can cancel in one click. Everything is stored in the URL.
 canonicalUrl https://bank.breck.lol/
 openGraphImage https://bank.breck.lol/og.png
 favicon favicon.svg
 keywords bank, virtual bank, checking, savings, loans, virtual cards, ScrollSet, front-end
 metaTags
+
+// ===== Starter transactions =====
+// The demo bank is built by replaying these, then any transactions in the URL.
+// Edit by hand: one transaction per block, blocks separated by a blank line,
+// "key value" lines, same keys as the History file.
+// time: omit for "now", or use relative ("-42d", "-6h", "-30m") or a date ("2026-01-15").
+// IDs are assigned in order: accounts a1 a2..., friends f1..., cards c1..., loans l1...
+// Note: changing this list changes what existing share links point to.
+
+type openAccount
+time -42d
+name Everyday Checking
+kind checking
+
+type friend
+time -140d
+name Breck Yunits
+handle @breckyunits
+color #3d6fd6
+
+type deposit
+time -42d
+account a1
+amount 740000.00
+note Opening deposit
+
+// Emit the starter transactions as bankSeed.json and inline them as window.bankSeed
+buildConcepts bankSeed.json
+jsonScript bankSeed.json
 
 css
  /* ===== tokens ===== */
@@ -826,7 +856,7 @@ script
    const n = { a: 0, f: 0, c: 0, l: 0 };
    const find = (list, id) => list.find(x => x.id === id);
    txs.forEach((t, i) => {
-    const r = rng(hashStr(i + "|" + t.time + "|" + t.type));
+    const r = rng(hashStr(i + "|" + t.type + "|" + (t.name || t.nickname || "")));
     const dg = k => Array.from({ length: k }, () => Math.floor(r() * 10)).join("");
     const ts = Number(t.time) || 0, amt = round2(t.amount);
     const log = o => s.transactions.unshift(Object.assign({ id: "t" + (i + 1), ts }, o));
@@ -848,19 +878,22 @@ script
    });
    return s;
   }
+  // Starter transactions come from the ScrollSet at the top of readme.scroll (window.bankSeed).
+  function seedTime(v, now) {
+   v = String(v == null ? "" : v).trim();
+   if (!v) return now;
+   const rel = v.match(/^([+-]?\d+(?:\.\d+)?)([dhms])$/);
+   if (rel) return Math.round(now + Number(rel[1]) * { d: DAY, h: 3600000, m: 60000, s: 1000 }[rel[2]]);
+   if (/^\d{4}-\d{1,2}-\d{1,2}/.test(v)) return Date.parse(v);
+   return Number(v) || now;
+  }
   function seedLog(now) {
-   return [
-    { type: "openAccount", time: now - 42 * DAY, name: "Everyday Checking", kind: "checking" },
-    { type: "openAccount", time: now - 140 * DAY, name: "High-Yield Savings", kind: "savings", accruedFrom: now - 6 * DAY },
-    { type: "friend", time: now - 140 * DAY, name: "Alex Rivera", handle: "@alex", color: "#3d6fd6" },
-    { type: "friend", time: now - 140 * DAY, name: "Sam Chen", handle: "@sam", color: "#0d9f6e" },
-    { type: "friend", time: now - 140 * DAY, name: "Jordan Lee", handle: "@jordan", color: "#c2703d" },
-    { type: "friend", time: now - 140 * DAY, name: "Priya Patel", handle: "@priya", color: "#7c5cd6" },
-    { type: "card", time: now - 30 * DAY, nickname: "Subscriptions", number: "4147000000008008", limit: 5000000, color: 0, quiet: 1 },
-    { type: "deposit", time: now - 42 * DAY, account: "a1", amount: 752837.17, note: "Opening deposit" },
-    { type: "deposit", time: now - 20 * DAY, account: "a2", amount: 1000000, note: "Opening deposit" },
-    { type: "send", time: now - 3 * DAY, from: "a1", to: "f1", amount: 42.5, note: "Dinner" }
-   ];
+   return (window.bankSeed || []).map(t => {
+    const o = Object.assign({}, t);
+    o.time = seedTime(t.time, now);
+    if (t.accruedFrom) o.accruedFrom = seedTime(t.accruedFrom, now);
+    return o;
+   });
   }
   // @@REDUCER-END
   // ===== Log <-> URL using Patch (https://breck.lol/patch.html) =====
@@ -978,19 +1011,15 @@ script
     return t;
    });
   }
-  // Backward compatibility: old ?log=z... (deflate-raw) and ?log=p... (plain) links.
-  const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - str.length % 4) % 4)), c => c.charCodeAt(0));
-  async function decodeOldLog(enc) {
-   const bytes = unb64u(enc.slice(1));
-   if (enc[0] === "z") return new TextDecoder().decode(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
-   return new TextDecoder().decode(bytes);
-  }
   const nowSec = () => Math.floor(Date.now() / 1000) * 1000; // times are whole seconds so URLs replay exactly
   const LAST_KEY = "bankOfBreck.lastLog"; // only remembers the last log for returning visitors
-  let txLog = seedLog(nowSec()), dirty = false;
-  let state = replay(txLog);
+  // The URL only carries transactions made after the starter set (deltas), so default links stay short.
+  const seedNow = nowSec();
+  let txLog = [];
+  const fullLog = () => seedLog(seedNow).concat(txLog);
+  let state = replay(fullLog());
   function persist() {
-   const qs = dirty ? logToPatch(txLog) : "";
+   const qs = txLog.length ? logToPatch(txLog) : "";
    history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + location.hash);
    try { if (qs) localStorage.setItem(LAST_KEY, qs); else localStorage.removeItem(LAST_KEY); } catch (e) {}
   }
@@ -1018,9 +1047,9 @@ script
    toastTimer = setTimeout(() => { t.classList.remove("show"); pendingUndo = null; }, undo ? 6000 : 2600);
   }
   const fail = message => toast(message);
-  function refresh() { state = replay(txLog); render(); renderInterest(); persist(); }
+  function refresh() { state = replay(fullLog()); render(); renderInterest(); persist(); }
   // Append transactions to the history file, then rebuild state from it.
-  function append() { const now = nowSec(); Array.from(arguments).forEach(t => txLog.push(Object.assign({ time: now }, t))); dirty = true; refresh(); return txLog.length; }
+  function append() { const now = nowSec(); Array.from(arguments).forEach(t => txLog.push(Object.assign({ time: now }, t))); refresh(); return txLog.length; }
   // Undo = drop the transaction from the end of the log (if it is still last).
   const undoLast = len => () => { if (txLog.length === len) { txLog.pop(); refresh(); return true; } return false; };
   function commit(message, undo) { if (message) toast(message, undo); }
@@ -1267,7 +1296,7 @@ script
     const type = val("account-type");
     const nm = val("account-name").trim() || (type === "savings" ? "Savings" : "Checking");
     const opening = round2(parseFloat(val("account-opening")) || 0);
-    const id = "a" + (txLog.filter(t => t.type === "openAccount").length + 1);
+    const id = "a" + (fullLog().filter(t => t.type === "openAccount").length + 1);
     const txs = [{ type: "openAccount", name: nm, kind: type }];
     if (opening > 0) txs.push({ type: "deposit", account: id, amount: opening, note: "Opening deposit · " + nm });
     append.apply(null, txs);
@@ -1358,19 +1387,19 @@ script
   function clearActivity() { append({ type: "clearActivity" }); commit("Activity cleared"); }
   function resetAll() {
    if (!confirm("Reset Bank of Breck and erase all local data?")) return;
-   txLog = seedLog(nowSec()); dirty = false; refresh(); closeAndClear(); toast("Fresh start");
+   txLog = []; refresh(); closeAndClear(); toast("Fresh start");
   }
   // ===== History file view =====
   function openHistory() {
    $("#detail-title").textContent = "History file";
    $("#detail-body").innerHTML =
     '<p class="muted">Every change is a transaction in this ScrollSet. The whole history lives in the URL and is replayed on load.</p>' +
-    '<pre style="max-height:50vh;overflow:auto;font-size:12px;line-height:1.45;white-space:pre-wrap;background:var(--surface-2);padding:12px;border-radius:11px;margin:12px 0">' + esc(logToText(txLog)) + "</pre>" +
+    '<pre style="max-height:50vh;overflow:auto;font-size:12px;line-height:1.45;white-space:pre-wrap;background:var(--surface-2);padding:12px;border-radius:11px;margin:12px 0">' + esc(logToText(fullLog())) + "</pre>" +
     '<div class="detail-actions"><button class="btn small" data-action="download-log">Download bank.scroll</button><button class="btn ghost small" data-action="close">Close</button></div>';
    openModal("detail", null, { path: "history", arg: "", key: "history" });
   }
   function downloadLog() {
-   const url = URL.createObjectURL(new Blob([logToText(txLog)], { type: "text/plain" }));
+   const url = URL.createObjectURL(new Blob([logToText(fullLog())], { type: "text/plain" }));
    const link = document.createElement("a");
    link.href = url; link.download = "bank.scroll"; document.body.appendChild(link); link.click(); link.remove();
    setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -1450,12 +1479,11 @@ script
    if (!qs && !location.hash) { try { qs = localStorage.getItem(LAST_KEY) || ""; } catch (e) {} }
    if (qs) {
     try {
-     const old = new URLSearchParams(qs).get("log");
-     const txs = old ? parseLog(await decodeOldLog(old)) : patchToLog(qs);
-     if (txs.length) { txLog = txs.map(t => Object.assign(t, { time: Number(t.time) || 0 })); dirty = true; }
+     const txs = patchToLog(qs);
+     if (txs.length) txLog = txs;
     } catch (e) { toast("Could not read the history in this link"); }
    }
-   state = replay(txLog);
+   state = replay(fullLog());
    render();
    renderInterest();
    persist();
@@ -1464,5 +1492,5 @@ script
   }
   boot();
   // Expose a tiny API so a backend can be added later without touching the UI.
-  window.BankOfBreck = { get state() { return state; }, get log() { return logToText(txLog); }, parseLog, replay, render };
+  window.BankOfBreck = { get state() { return state; }, get log() { return logToText(fullLog()); }, parseLog, replay, render };
  })();
